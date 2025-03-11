@@ -16,8 +16,8 @@ const sampleCompany = {
   raw_body: `{"id":"618e2aa20fa7f5000145d12f","name":"Superior Plumbing, Heating, & Mechanical, LLC","website_url":"http://www.superiorphm.com","blog_url":null,"angellist_url":null,"linkedin_url":"http://www.linkedin.com/company/superior-plumbing-heating-mechanical-llc","twitter_url":null,"facebook_url":"https://www.facebook.com/people/Superior-Plumbing-Heating-Mechanical/100069132161177/","primary_phone":{"number":"+1 212-995-1396","source":"Scraped","sanitized_number":"+12129951396"},"languages":[],"alexa_ranking":null,"phone":"+1 212-995-1396","linkedin_uid":"12580674","founded_year":2003,"publicly_traded_symbol":null,"publicly_traded_exchange":null,"logo_url":"https://zenprospect-production.s3.amazonaws.com/uploads/pictures/66482d621e82f40001428f2e/picture","crunchbase_url":null,"primary_domain":"superiorphm.com","sanitized_phone":"+12129951396","industry":"construction","keywords":["plumbing","heating","fire sprinkler","backflow prevention","ua local 1","customer service","gas","pumps"],"estimated_num_employees":16,"industries":["construction"],"secondary_industries":[],"snippets_loaded":true,"industry_tag_id":"5567cd4773696439dd350000","industry_tag_hash":{"construction":"5567cd4773696439dd350000"},"retail_location_count":0,"raw_address":"87-16 101st Ave, Ozone Park, NY 11416, US","street_address":"87-16 101st Ave","city":"New York","state":"New York","postal_code":"11416","country":"United States","owned_by_organization_id":null,"seo_description":"Superior Plumbing, Heating, & Mechanical has been delivering plumbing excellence to building and property managers in NYC for 20 years.","short_description":"Our courteous and skilled staff provides 24 hour emergency service to all 5 boroughs, Long Island & Westchester. With over 30 years of experience in all phases of plumbing, heating, gas, fire sprinkler, & state certified backflow testing, Superior has the tools and the talent to serve New York.","suborganizations":[],"num_suborganizations":0,"total_funding":null,"total_funding_printed":null,"latest_funding_round_date":null,"latest_funding_stage":null,"funding_events":[],"technology_names":["Adobe Media Optimizer","Cedexis Radar","CloudFlare Hosting","Cloudflare DNS","Google Analytics","Google Font API","Google Tag Manager","Mobile Friendly","Outlook","Remote","Vimeo","WordPress.org","reCAPTCHA"],"current_technologies":[{"uid":"adobe_media_optimizer","name":"Adobe Media Optimizer","category":"Search Marketing"},{"uid":"cedexis_radar","name":"Cedexis Radar","category":"Web Performance Monitoring"},{"uid":"cloudflare_hosting","name":"CloudFlare Hosting","category":"Hosting"},{"uid":"cloudflare_dns","name":"Cloudflare DNS","category":"Domain Name Services"},{"uid":"google_analytics","name":"Google Analytics","category":"Analytics and Tracking"},{"uid":"google_font_api","name":"Google Font API","category":"Fonts"},{"uid":"google_tag_manager","name":"Google Tag Manager","category":"Tag Management"},{"uid":"mobile_friendly","name":"Mobile Friendly","category":"Other"},{"uid":"outlook","name":"Outlook","category":"Email Providers"},{"uid":"remote","name":"Remote","category":"Other"},{"uid":"vimeo","name":"Vimeo","category":"Online Video Platforms"},{"uid":"wordpress_org","name":"WordPress.org","category":"CMS"},{"uid":"recaptcha","name":"reCAPTCHA","category":"Captcha"}],"org_chart_root_people_ids":[],"org_chart_sector":"OrgChart::SectorHierarchy::Rules::Construction","org_chart_removed":null,"org_chart_show_department_filter":null,"departmental_head_count":{"business_development":1,"accounting":0,"sales":0,"operations":0,"finance":0,"marketing":0,"human_resources":0,"information_technology":0,"legal":0,"engineering":0,"product_management":0,"consulting":0,"education":0,"administrative":0,"media_and_commmunication":0,"arts_and_design":0,"entrepreneurship":0,"support":0,"data_science":0}}`,
   assignee: null,
   email_sent: false,
-  createdAt: new Date("2024-11-18T10:17:11.488"),
-  updatedAt: new Date("2024-11-18T10:17:11.488"),
+  createdAt: new Date(),
+  updatedAt: new Date(),
   isDeleted: false,
   deletedAt: null,
 };
@@ -194,6 +194,47 @@ async function testMigrateCompany() {
 
       if (answer === "yes" || answer === "y") {
         try {
+          // Check if company with this domain already exists
+          const existingCompany = await newPrisma.company.findUnique({
+            where: { domain: transformedCompany.domain },
+          });
+
+          if (existingCompany && existingCompany.id !== transformedCompany.id) {
+            console.log(
+              `A company with domain ${transformedCompany.domain} already exists (ID: ${existingCompany.id}).`
+            );
+            console.log("Would you like to update it or skip? (update/skip)");
+
+            process.stdin.once("data", async (data) => {
+              const updateAnswer = data.toString().trim().toLowerCase();
+
+              if (updateAnswer === "update" || updateAnswer === "u") {
+                try {
+                  // Update existing company
+                  const result = await newPrisma.company.update({
+                    where: { id: existingCompany.id },
+                    data: {
+                      ...transformedCompany,
+                      id: existingCompany.id, // Keep the original ID
+                    },
+                  });
+
+                  console.log("Company successfully updated in the database:");
+                  console.log(`ID: ${result.id}, Name: ${result.name}`);
+                } catch (error) {
+                  console.error("Error updating company:", error);
+                }
+              } else {
+                console.log("Skipped updating existing company.");
+              }
+
+              await newPrisma.$disconnect();
+              process.exit(0);
+            });
+
+            return; // Wait for user input on update/skip
+          }
+
           // Create company in new schema
           const result = await newPrisma.company.upsert({
             where: { id: transformedCompany.id },
@@ -203,8 +244,18 @@ async function testMigrateCompany() {
 
           console.log("Company successfully inserted into new database:");
           console.log(`ID: ${result.id}, Name: ${result.name}`);
-        } catch (error) {
-          console.error("Error inserting company:", error);
+        } catch (error: any) {
+          // Check if error is due to unique constraint violation on domain
+          if (
+            error.code === "P2002" &&
+            error.meta?.target?.includes("domain")
+          ) {
+            console.log(
+              `Error: Company with domain ${transformedCompany.domain} already exists.`
+            );
+          } else {
+            console.error("Error inserting company:", error);
+          }
         }
       } else {
         console.log("Migration test completed without database insertion.");

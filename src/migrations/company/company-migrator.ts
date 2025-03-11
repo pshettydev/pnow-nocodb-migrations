@@ -1,11 +1,12 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient as NewPrismaClient } from "@prisma/new-client";
+import { PrismaClient as OldPrismaClient } from "@prisma/old-client";
 
 // Define types for old and new schemas
 type OldSchema = any;
 type NewSchema = any;
 
 // Initialize Prisma clients with explicit schema paths
-const oldPrisma = new PrismaClient({
+const oldPrisma = new OldPrismaClient({
   datasources: {
     db: {
       url: process.env.OLD_DATABASE_URL || process.env.DATABASE_URL,
@@ -13,7 +14,7 @@ const oldPrisma = new PrismaClient({
   },
 }) as unknown as OldSchema;
 
-const newPrisma = new PrismaClient({
+const newPrisma = new NewPrismaClient({
   datasources: {
     db: {
       url: process.env.NEW_DATABASE_URL || process.env.DATABASE_URL,
@@ -22,7 +23,7 @@ const newPrisma = new PrismaClient({
 }) as unknown as NewSchema;
 
 // Default company status to use if we can't determine a more appropriate one
-const DEFAULT_COMPANY_STATUS = "potential_client"; // Maps to "Potential Client"
+const DEFAULT_COMPANY_STATUS = "Potential Client"; // Maps to "potential_client"
 
 // Map of all available company statuses
 const COMPANY_STATUSES = {
@@ -146,6 +147,7 @@ async function migrateCompanies() {
     console.log(`Found ${oldCompanies.length} companies in old schema.`);
 
     let successCount = 0;
+    let existingCount = 0;
     let errorCount = 0;
 
     // Process companies in batches (to avoid memory issues with large datasets)
@@ -163,6 +165,19 @@ async function migrateCompanies() {
           // Transform company data
           const newCompany = transformCompany(oldCompany);
 
+          // Check if company with this domain already exists
+          const existingCompany = await newPrisma.company.findUnique({
+            where: { domain: newCompany.domain },
+          });
+
+          if (existingCompany && existingCompany.id !== newCompany.id) {
+            console.log(
+              `Company with domain ${newCompany.domain} already exists (ID: ${existingCompany.id}). Skipping.`
+            );
+            existingCount++;
+            continue; // Skip to next company
+          }
+
           // Create company in new schema
           await newPrisma.company.upsert({
             where: { id: newCompany.id },
@@ -171,15 +186,28 @@ async function migrateCompanies() {
           });
 
           successCount++;
-        } catch (error) {
-          console.error(`Error migrating company ${oldCompany.id}:`, error);
-          errorCount++;
+        } catch (error: any) {
+          // Check if error is due to unique constraint violation on domain
+          if (
+            error.code === "P2002" &&
+            error.meta?.target?.includes("domain")
+          ) {
+            console.log(
+              `Company with domain ${oldCompany.domain} already exists. Skipping.`
+            );
+            existingCount++;
+          } else {
+            console.error(`Error migrating company ${oldCompany.id}:`, error);
+            errorCount++;
+          }
         }
       }
     }
 
-    console.log("Company migration completed.");
+    console.log("\nCompany migration completed.");
+    console.log(`Total companies found in old schema: ${oldCompanies.length}`);
     console.log(`Successfully migrated: ${successCount}`);
+    console.log(`Already existing (skipped): ${existingCount}`);
     console.log(`Failed migrations: ${errorCount}`);
   } catch (error) {
     console.error("Migration failed:", error);

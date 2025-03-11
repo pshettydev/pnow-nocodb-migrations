@@ -8,7 +8,7 @@
     "start": "ts-node src/index.ts",
     "migrate": "pnpm run setup && pnpm run migrate:companies",
     "generate": "ts-node src/generate-clients.ts",
-    "setup": "npm install && npm run generate && npm run build",
+    "setup": "pnpm install && pnpm run generate && pnpm run build",
     "setup:migration": "ts-node src/migrations/setup.ts",
     "test:company-migration": "ts-node src/migrations/company/test-company-migration.ts",
     "migrate:companies": "ts-node src/migrations/company/company-migrator.ts"
