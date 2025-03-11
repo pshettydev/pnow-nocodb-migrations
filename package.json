@@ -1,0 +1,29 @@
+{
+  "name": "pnow-nocodb-migrations",
+  "version": "1.0.0",
+  "description": "Migration script for Companies to Company model",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "migrate": "ts-node src/migrate.ts",
+    "generate": "ts-node src/generate-clients.ts",
+    "setup": "npm install && npm run generate && npm run build",
+    "setup:migration": "ts-node src/prisma/migrations/setup.ts",
+    "test:company-migration": "ts-node src/prisma/migrations/test-company-migration.ts",
+    "migrate:companies": "ts-node src/prisma/migrations/company-migrator.ts"
+  },
+  "keywords": ["migration", "prisma", "typescript"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "prisma": "^5.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
