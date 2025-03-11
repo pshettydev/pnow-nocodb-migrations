@@ -1,6 +1,6 @@
 # NocoDB Schema Migration
 
-This directory contains scripts for migrating data from the old NocoDB schema to the new schema.
+This directory contains scripts for migrating data from the old NocoDB schema to the new PNATS V2 schema.
 
 ## Getting Started
 
@@ -15,8 +15,8 @@ This directory contains scripts for migrating data from the old NocoDB schema to
    Then edit the `.env` file to provide the correct database URLs for your old and new databases:
 
    ```
-   OLD_DATABASE_URL=postgresql://username:password@localhost:5432/old_database
-   NEW_DATABASE_URL=postgresql://username:password@localhost:5432/new_database
+   OLD_DATABASE_URL=postgresql://localhost:12345@localhost:5445/leads_db
+   NEW_DATABASE_URL=postgresql://localhost:12345@localhost:5445/tenant_db
    ```
 
 2. **Test the migration with a sample record**

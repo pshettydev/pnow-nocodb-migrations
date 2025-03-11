@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient as NewPrismaClient } from "@prisma/new-client";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -8,7 +8,7 @@ dotenv.config();
 const sampleCompany = {
   id: "0627caad-6165-48ca-8c74-aac1d9783d92",
   organizationId: null,
-  domain: "superiorphm.com",
+  domain: "testing.com",
   careers_page: null,
   linkedin_url: null,
   company_size: null,
@@ -45,7 +45,7 @@ const COMPANY_STATUSES = {
   contract_terminated: "Contract Terminated",
 };
 
-const DEFAULT_COMPANY_STATUS = "potential_client";
+const DEFAULT_COMPANY_STATUS = "Potential Client";
 
 /**
  * Parse the raw_body JSON string from old schema
@@ -161,7 +161,7 @@ async function testMigrateCompany() {
   console.log("Starting test company migration...");
 
   // Initialize Prisma client for new schema
-  const newPrisma = new PrismaClient({
+  const newPrisma = new NewPrismaClient({
     datasources: {
       db: {
         url: process.env.NEW_DATABASE_URL || process.env.DATABASE_URL,
