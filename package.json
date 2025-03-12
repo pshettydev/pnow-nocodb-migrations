@@ -6,14 +6,17 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads",
+    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads && pnpm run migrate:positions",
     "generate": "ts-node src/generate-clients.ts",
     "setup": "pnpm install && pnpm run generate && pnpm run build",
     "setup:migration": "ts-node src/migrations/setup.ts",
     "test:company-migration": "ts-node src/migrations/company/test-company-migration.ts",
     "migrate:companies": "ts-node src/migrations/company/company-migrator.ts",
     "test:lead-migration": "ts-node src/migrations/lead/test-lead-migration.ts",
-    "migrate:leads": "ts-node src/migrations/lead/lead-migrator.ts"
+    "migrate:leads": "ts-node src/migrations/lead/lead-migrator.ts",
+    "test:position-migration": "ts-node src/migrations/position/test-position-migration.ts",
+    "migrate:positions": "ts-node src/migrations/position/position-migrator.ts",
+    "cleanup:position-tests": "ts-node src/migrations/position/cleanup-test-data.ts"
   },
   "keywords": [
     "migration",
