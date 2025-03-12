@@ -6,19 +6,26 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "migrate": "pnpm run setup && pnpm run migrate:companies",
+    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads",
     "generate": "ts-node src/generate-clients.ts",
     "setup": "pnpm install && pnpm run generate && pnpm run build",
     "setup:migration": "ts-node src/migrations/setup.ts",
     "test:company-migration": "ts-node src/migrations/company/test-company-migration.ts",
-    "migrate:companies": "ts-node src/migrations/company/company-migrator.ts"
+    "migrate:companies": "ts-node src/migrations/company/company-migrator.ts",
+    "test:lead-migration": "ts-node src/migrations/lead/test-lead-migration.ts",
+    "migrate:leads": "ts-node src/migrations/lead/lead-migrator.ts"
   },
-  "keywords": ["migration", "prisma", "typescript"],
+  "keywords": [
+    "migration",
+    "prisma",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.10.0",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
