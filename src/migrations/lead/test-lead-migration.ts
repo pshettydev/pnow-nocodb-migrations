@@ -82,7 +82,7 @@ function determineLeadStatus(oldLead: any): string {
   } else if (oldLead.companyId) {
     return "converted_to_company"; // Always use this status when we have a company
   }
-  return DEFAULT_LEAD_STATUS;
+  return "new_lead";
 }
 
 /**
@@ -90,7 +90,7 @@ function determineLeadStatus(oldLead: any): string {
  */
 function transformLead(
   oldLead: any,
-  status: string,
+  statusValue: string,
   companyInNewSchema?: any
 ): any {
   return {
@@ -102,8 +102,8 @@ function transformLead(
     company_name: companyInNewSchema?.name || null,
     company_website: companyInNewSchema?.website || null,
 
-    // Status field (required in new schema)
-    status: status,
+    // Status field (required in new schema) - using the value, not the key
+    status: statusValue,
 
     // Version field (new in the new schema)
     version: 1.0,
@@ -157,6 +157,7 @@ function generatePlaceholderEmail(company: any): string {
  */
 async function ensureLeadStatuses(prisma: any) {
   console.log("Ensuring lead statuses exist...");
+  const createdStatuses: Record<string, any> = {};
 
   try {
     for (const [key, value] of Object.entries(LEAD_STATUSES)) {
@@ -167,7 +168,7 @@ async function ensureLeadStatuses(prisma: any) {
 
       // If status doesn't exist, create it
       if (!existingStatus) {
-        await prisma.leadStatus.create({
+        const newStatus = await prisma.leadStatus.create({
           data: {
             field_type: "SINGLE_SELECT",
             field_display_name: "leads_status",
@@ -178,11 +179,18 @@ async function ensureLeadStatuses(prisma: any) {
             created_by: "migration_script",
           },
         });
+        createdStatuses[key] = newStatus;
         console.log(`Created lead status: ${key}`);
+      } else {
+        createdStatuses[key] = existingStatus;
+        console.log(
+          `Using existing lead status: ${key} -> ${existingStatus.value}`
+        );
       }
     }
 
     console.log("Lead statuses check completed.");
+    return createdStatuses;
   } catch (error) {
     console.error("Error ensuring lead statuses:", error);
     throw error;
@@ -293,8 +301,8 @@ async function testMigrateLead() {
   }) as unknown as NewSchema;
 
   try {
-    // Ensure statuses exist
-    await ensureLeadStatuses(newPrisma);
+    // Ensure statuses exist and get the created/existing statuses
+    const leadStatuses = await ensureLeadStatuses(newPrisma);
     await ensureCompanyStatus(newPrisma);
 
     // Test Part 1: Create a test company and migrate sample lead
@@ -309,10 +317,26 @@ async function testMigrateLead() {
     sampleLead.companyId = testCompanyInDb.id;
 
     // Determine lead status - should be "converted_to_company" since we have a company
-    const status = determineLeadStatus(sampleLead);
+    const statusKey = determineLeadStatus(sampleLead);
 
-    // Transform lead data with the test company
-    const transformedLead = transformLead(sampleLead, status, testCompanyInDb);
+    // Get the complete status record to ensure we have all required fields
+    console.log("Status key determined:", statusKey);
+    console.log("Available lead statuses:", Object.keys(leadStatuses));
+
+    const leadStatus = leadStatuses[statusKey];
+    if (!leadStatus) {
+      throw new Error(
+        `Lead status with key '${statusKey}' not found in database.`
+      );
+    }
+    console.log(`Using lead status: ${leadStatus.key} -> ${leadStatus.value}`);
+
+    // Transform lead data with the test company and status value (not key)
+    const transformedLead = transformLead(
+      sampleLead,
+      leadStatus.value, // Use the value field, not the key
+      testCompanyInDb
+    );
 
     // Display transformation result
     console.log("Sample lead from old schema (updated with test company ID):");
@@ -406,6 +430,31 @@ async function testCreateLeadForCompany(newPrisma: any) {
   try {
     console.log("\n=== Part 2: Create Lead for Existing Company ===");
 
+    // First get lead statuses to ensure we have valid references
+    console.log("Fetching lead statuses...");
+    const leadStatusesResult = await newPrisma.leadStatus.findMany();
+    const leadStatuses = leadStatusesResult.reduce(
+      (acc: Record<string, any>, status: any) => {
+        acc[status.key] = status;
+        return acc;
+      },
+      {}
+    );
+
+    const convertedToCompanyStatus = leadStatuses["converted_to_company"];
+    if (!convertedToCompanyStatus) {
+      console.error(
+        "Unable to find 'converted_to_company' lead status in the database"
+      );
+      await newPrisma.$disconnect();
+      process.exit(1);
+      return;
+    }
+
+    console.log(
+      `Using lead status: ${convertedToCompanyStatus.key} -> ${convertedToCompanyStatus.value}`
+    );
+
     // Get a random company from the new schema
     const companies = await newPrisma.company.findMany({
       take: 1,
@@ -467,7 +516,7 @@ async function testCreateLeadForCompany(newPrisma: any) {
       company_id: company.id,
       company_name: company.name,
       company_website: company.website,
-      status: "converted_to_company",
+      status: convertedToCompanyStatus.value, // Use the value, not the key
       version: 1.0,
       email_sent: false,
       email_opened: false,
