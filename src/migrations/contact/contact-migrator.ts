@@ -440,7 +440,7 @@ async function migrateContact(oldContact: any): Promise<string> {
       title: oldContact.title?.substring(0, 250),
       email_status: emailStatus.value,
       photo_url: oldContact.photo_url?.substring(0, 500),
-      organization_id: oldContact.organization_id,
+      organization_id: null, // Set to null to avoid UUID validation issues
 
       // Location info (limited to reasonable lengths)
       // location_id: null, // Would need location creation
