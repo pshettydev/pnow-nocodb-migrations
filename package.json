@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads && pnpm run migrate:positions",
+    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads && pnpm run migrate:positions && pnpm run migrate:contacts",
     "generate": "ts-node src/generate-clients.ts",
     "setup": "pnpm install && pnpm run generate && pnpm run build",
     "setup:migration": "ts-node src/migrations/setup.ts",
@@ -16,7 +16,10 @@
     "migrate:leads": "ts-node src/migrations/lead/lead-migrator.ts",
     "test:position-migration": "ts-node src/migrations/position/test-position-migration.ts",
     "migrate:positions": "ts-node src/migrations/position/position-migrator.ts",
-    "cleanup:position-tests": "ts-node src/migrations/position/cleanup-test-data.ts"
+    "cleanup:position-tests": "ts-node src/migrations/position/cleanup-test-data.ts",
+    "test:contact-migration": "ts-node src/migrations/contact/test-contact-migration.ts",
+    "migrate:contacts": "ts-node src/migrations/contact/contact-migrator.ts",
+    "cleanup:contact-tests": "ts-node src/migrations/contact/cleanup-test-data.ts"
   },
   "keywords": [
     "migration",
