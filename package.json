@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "migrate": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads && pnpm run migrate:positions && pnpm run migrate:contacts",
+    "migrate": "pnpm run setup && ts-node src/migrations/run-migrations.ts",
+    "migrate:all": "pnpm run setup && pnpm run migrate:companies && pnpm run migrate:leads && pnpm run migrate:positions && pnpm run migrate:contacts",
     "generate": "ts-node src/generate-clients.ts",
     "setup": "pnpm install && pnpm run generate && pnpm run build",
     "setup:migration": "ts-node src/migrations/setup.ts",

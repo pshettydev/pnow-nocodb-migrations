@@ -1,26 +1,26 @@
-# NocoDB Companies Migration
+# NocoDB Database Migration Suite
 
-This project provides a migration script to transfer data from the old `Companies` model to the new `Company` model in a PostgreSQL database.
+This project provides a comprehensive suite of migration scripts to transfer data from the old database schema to the new NocoDB schema in PostgreSQL. The migration covers multiple entity types: Companies, Leads, Positions, and Contacts.
 
 ## Prerequisites
 
 - Node.js (v14 or higher)
-- npm or yarn
+- pnpm (recommended) or npm
 - Access to both source and destination PostgreSQL databases
 
 ## Setup
 
 1. Clone this repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/pshettydev/pnow-nocodb-migrations.git
    cd pnow-nocodb-migrations
    ```
 
 2. Install dependencies and set up the project:
    ```bash
-   npm run setup
+   pnpm run setup
    # or
-   yarn setup
+   npm run setup
    ```
    This will:
    - Install all dependencies
@@ -38,30 +38,76 @@ This project provides a migration script to transfer data from the old `Companie
    NEW_DATABASE_URL="postgresql://username:password@hostname:port/new_database"
    ```
 
-## Running the Migration
+## Running the Migrations
 
-To run the migration script:
+### Interactive Sequential Migration (Recommended)
+
+The recommended way to run migrations is using the interactive sequential process:
 
 ```bash
-npm run migrate
+pnpm migrate
 # or
-yarn migrate
+npm run migrate
 ```
 
 This will:
-1. Connect to both the old and new databases
-2. Seed the company status data in the new database (if not already present)
-3. Migrate companies from the old database to the new database
-4. Log the progress and results
+1. Set up the environment (install dependencies, generate clients, build)
+2. Run the company migration
+3. Prompt for confirmation before proceeding to the lead migration
+4. Run the lead migration (if confirmed)
+5. Prompt for confirmation before proceeding to the position migration
+6. Run the position migration (if confirmed)
+7. Prompt for confirmation before proceeding to the contact migration
+8. Run the contact migration (if confirmed)
 
-## Available Scripts
+After each migration, you'll see a detailed report of the results, allowing you to assess whether to proceed with the next one.
 
-- `npm run setup` - Install dependencies, generate Prisma clients, and build the project
-- `npm run generate` - Generate Prisma clients for both schemas
-- `npm run build` - Build the TypeScript code
-- `npm run migrate` - Run the migration script
+### Running All Migrations Without Prompts
+
+If you prefer to run all migrations without interactive prompts:
+
+```bash
+pnpm migrate:all
+# or
+npm run migrate:all
+```
+
+### Running Individual Migrations
+
+You can also run migrations for specific entity types:
+
+```bash
+pnpm migrate:companies  # Run only the company migration
+pnpm migrate:leads      # Run only the lead migration
+pnpm migrate:positions  # Run only the position migration
+pnpm migrate:contacts   # Run only the contact migration
+```
+
+## Testing Migrations
+
+Before running production migrations, you can test with sample data:
+
+```bash
+pnpm test:company-migration
+pnpm test:lead-migration
+pnpm test:position-migration
+pnpm test:contact-migration
+```
+
+These test scripts will guide you through the migration process interactively with sample data.
+
+## Cleaning Up Test Data
+
+After testing, you can clean up the test data:
+
+```bash
+pnpm cleanup:position-tests
+pnpm cleanup:contact-tests
+```
 
 ## Migration Details
+
+### Companies Migration
 
 The migration script performs the following transformations:
 
@@ -81,6 +127,25 @@ The migration script performs the following transformations:
 - Maps `Companies.isDeleted` to `Company.is_deleted`
 - Maps `Companies.deletedAt` to `Company.deleted_at`
 
+### Leads, Positions, and Contacts Migrations
+
+Similar transformation logic is applied to other entity types, with entity-specific handling for:
+
+- UUID normalization and validation
+- Entity relationships (e.g., linking contacts to companies)
+- Field mapping between old and new schemas
+- Data validation and cleanup
+- Enum and status field handling
+
+## Key Features
+
+- **Multi-strategy entity lookups**: Finds related entities using ID or alternative fields (e.g., domain for companies)
+- **Batch processing**: Efficiently processes large datasets in manageable chunks
+- **Detailed reporting**: Provides comprehensive statistics on migration results
+- **Interactive confirmations**: Allows reviewing results before proceeding to the next migration step
+- **Error categorization**: Classifies failures for better diagnostics and resolution
+- **Data validation**: Ensures migrated data meets new schema requirements
+
 ## Troubleshooting
 
 If you encounter any issues:
@@ -89,7 +154,19 @@ If you encounter any issues:
 2. Ensure both databases are accessible from your environment
 3. Check the console output for specific error messages
 4. Verify that the Prisma schema files match your actual database schemas
+5. For UUID-related errors, check the detailed failure logs
+6. Review entity-specific documentation in the src/migrations directory
 
-## License
+## Project Structure
 
-ISC 
+```
+pnow-nocodb-migrations/
+├── src/
+│   ├── migrations/        # Migration scripts directory
+│   │   ├── company/       # Company migration scripts
+│   │   ├── lead/          # Lead migration scripts 
+│   │   ├── position/      # Position migration scripts
+│   │   ├── contact/       # Contact migration scripts
+│   │   └── run-migrations.ts # Sequential migration runner
+└── ... other project files
+```
