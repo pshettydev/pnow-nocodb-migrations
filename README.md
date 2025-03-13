@@ -1,6 +1,6 @@
 # NocoDB Database Migration Suite
 
-This project provides a comprehensive suite of migration scripts to transfer data from the old database schema to the new NocoDB schema in PostgreSQL. The migration covers multiple entity types: Companies, Leads, Positions, and Contacts.
+This project provides a comprehensive suite of migration scripts to transfer data from the old database schema which was used by NocoDB to the new PNow ATS Tenant schema in PostgreSQL. The migration covers multiple entity types: Companies, Leads, Positions, and Contacts.
 
 ## Prerequisites
 
